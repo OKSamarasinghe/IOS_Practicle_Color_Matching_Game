@@ -4,31 +4,55 @@ struct ContentView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 30) {
+            VStack(spacing: 40) {
 
-                Text("Color Matching Game")
+                Spacer()
+
+                Text("🎨 Color Matching Game")
                     .font(.largeTitle)
                     .fontWeight(.bold)
 
-                Text("Select Difficulty")
-                    .font(.title2)
+                Text("Choose Difficulty")
+                    .font(.title3)
+                    .foregroundColor(.gray)
 
-                NavigationLink("Easy") {
-                    GameView(difficulty: .easy)
-                }
-                .buttonStyle(.borderedProminent)
+                VStack(spacing: 20) {
 
-                NavigationLink("Medium") {
-                    GameView(difficulty: .medium)
-                }
-                .buttonStyle(.borderedProminent)
+                    NavigationLink {
+                        GameView(difficulty: .easy)
+                    } label: {
+                        difficultyButton(title: "Easy", color: .green)
+                    }
 
-                NavigationLink("Hard") {
-                    GameView(difficulty: .hard)
+                    NavigationLink {
+                        GameView(difficulty: .medium)
+                    } label: {
+                        difficultyButton(title: "Medium", color: .orange)
+                    }
+
+                    NavigationLink {
+                        GameView(difficulty: .hard)
+                    } label: {
+                        difficultyButton(title: "Hard", color: .red)
+                    }
                 }
-                .buttonStyle(.borderedProminent)
+
+                Spacer()
             }
+            .padding()
         }
+    }
+
+    func difficultyButton(title: String, color: Color) -> some View {
+        Text(title)
+            .font(.title2)
+            .fontWeight(.bold)
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(color)
+            .cornerRadius(15)
+            .shadow(radius: 5)
     }
 }
 
