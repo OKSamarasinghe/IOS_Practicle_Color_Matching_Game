@@ -4,13 +4,13 @@ struct GameView: View {
     @EnvironmentObject private var profileStore: ProfileStore
     @EnvironmentObject private var progressStore: ProgressStore
     @EnvironmentObject private var highScoreStore: HighScoreStore
+    @EnvironmentObject private var achievementStore: AchievementStore
 
     @Environment(\.dismiss) private var dismiss
 
     let level: Level
     @StateObject private var vm: GameViewModel
 
-    // NEW navigation flags
     @State private var goToNextLevel: Bool = false
     @State private var goBackToLevels: Bool = false
 
@@ -108,23 +108,24 @@ struct GameView: View {
         .onAppear { vm.start() }
         .onDisappear { vm.stop() }
 
-        // ✅ Continue -> Next Level navigation
+        // Continue -> Next level navigation
         .navigationDestination(isPresented: $goToNextLevel) {
             let nextLevelID = min(level.id + 1, level.difficulty.maxLevels)
             GameView(level: Level.build(difficulty: level.difficulty, id: nextLevelID))
                 .environmentObject(profileStore)
                 .environmentObject(progressStore)
                 .environmentObject(highScoreStore)
+                .environmentObject(achievementStore)
         }
 
-        // ✅ Close -> Back to Levels
+        // Close -> Levels
         .onChange(of: goBackToLevels) { _, newValue in
             if newValue {
                 dismiss()
             }
         }
 
-        // ✅ Game Over Sheet
+        // Game Over sheet
         .sheet(isPresented: $vm.isGameOver) {
             GameOverView(
                 didWin: vm.didWin,
@@ -132,32 +133,30 @@ struct GameView: View {
                 difficulty: level.difficulty,
                 levelID: level.id,
                 onContinue: {
-                    saveScore()
+                    saveScoreAndAchievements()
 
                     if vm.didWin {
                         progressStore.unlockNext(difficulty: level.difficulty, currentLevel: level.id)
 
-                        // go to next level if not last level
                         if level.id < level.difficulty.maxLevels {
                             goToNextLevel = true
                         } else {
-                            // last level -> Levels screen
                             goBackToLevels = true
                         }
                     } else {
-                        // lose -> Levels screen
                         goBackToLevels = true
                     }
                 },
                 onCloseToLevels: {
-                    saveScore()
+                    saveScoreAndAchievements()
                     goBackToLevels = true
                 }
             )
         }
     }
 
-    private func saveScore() {
+    private func saveScoreAndAchievements() {
+        // Always save score locally
         let entry = HighScoreEntry(
             playerName: profileStore.profile.name,
             difficulty: level.difficulty,
@@ -165,6 +164,15 @@ struct GameView: View {
             score: vm.score
         )
         highScoreStore.add(entry)
+
+        // Local achievements
+        if vm.didWin {
+            achievementStore.unlock(.firstWin)
+
+            if vm.score >= 100 {
+                achievementStore.unlock(.scoreHundred)
+            }
+        }
     }
 
     private func powerUp(title: String, icon: String, count: Int) -> some View {
